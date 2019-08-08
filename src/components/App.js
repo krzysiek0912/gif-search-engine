@@ -5,43 +5,34 @@ import Gif from "./Gif";
 import { GIPHY_API_URL, GIPHY_PUB_KEY } from "./config";
 
 class App extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { loading: false, searchingText: "", gif: {} };
-  }
-  getGif = (searchingText, callback) => {
-    const url =
-      GIPHY_API_URL +
-      "/v1/gifs/random?api_key=" +
-      GIPHY_PUB_KEY +
-      "&tag=" +
-      searchingText;
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", url);
-    xhr.onload = function() {
-      if (xhr.status === 200) {
-        const data = JSON.parse(xhr.responseText).data,
-          gif = {
-            url: data.fixed_width_downsampled_url,
-            sourceUrl: data.url
-          };
-        callback(gif); // 6.
-      }
-    };
-    xhr.send();
+  state = { loading: false, gif: {} };
+
+  callAPI = (url, callback) => {
+    fetch(url)
+      .then(resp => resp.json())
+      .then(resp => callback(resp));
+  };
+
+  getGif = (searchingText, type) => {
+    const url = `${GIPHY_API_URL}/v1/gifs/${type}?api_key=${GIPHY_PUB_KEY}&tag=${searchingText}`;
+
+    this.callAPI(url, ({ data }) => {
+      const gif = {
+        url: data.fixed_width_downsampled_url,
+        sourceUrl: data.url
+      };
+      this.setState({
+        loading: false,
+        gif
+      });
+    });
   };
   handleSearch = searchingText => {
     this.setState({
       loading: true
     });
 
-    this.getGif(searchingText, gif => {
-      this.setState({
-        loading: false,
-        gif,
-        searchingText
-      });
-    });
+    this.getGif(searchingText, "random");
   };
 
   render() {
@@ -59,7 +50,9 @@ class App extends React.Component {
           aby pobrać kolejne gify.
         </p>
         <Search onSearch={this.handleSearch} />
-        <Gif loading={loading} url={gif.url} sourceUrl={gif.sourceUrl} />
+        {gif.url && (
+          <Gif loading={loading} url={gif.url} sourceUrl={gif.sourceUrl} />
+        )}
       </div>
     );
   }
